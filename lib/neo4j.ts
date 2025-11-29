@@ -1,32 +1,29 @@
-import neo4j, { Driver } from 'neo4j-driver';
+import neo4j from 'neo4j-driver';
 
-let driver: Driver | null = null;
-
-export function getDriver(): Driver {
-  if (!driver) {
-    // For hackathon: using mock/local Neo4j or cloud instance
-    const uri = process.env.NEO4J_URI || 'neo4j://localhost:7687';
-    const user = process.env.NEO4J_USER || 'neo4j';
-    const password = process.env.NEO4J_PASSWORD || 'password';
-
-    driver = neo4j.driver(uri, neo4j.auth.basic(user, password));
-  }
-  return driver;
+// Neo4j connection (for production)
+export function getDriver() {
+  const uri = process.env.NEO4J_URI || 'neo4j://localhost:7687';
+  const user = process.env.NEO4J_USER || 'neo4j';
+  const password = process.env.NEO4J_PASSWORD || 'password';
+  
+  return neo4j.driver(uri, neo4j.auth.basic(user, password));
 }
 
-export async function closeDriver() {
-  if (driver) {
-    await driver.close();
-    driver = null;
-  }
+export function closeDriver(driver: any) {
+  return driver.close();
 }
 
-// Mock graph data for when Neo4j is not available
+// Graph data types
 export interface GraphNode {
   id: string;
   label: string;
   type: 'user' | 'group';
-  properties: Record<string, any>;
+  properties: {
+    balance: number;
+    phoneNumber?: string;
+    members?: number;
+  };
+  groupId?: string; // NEW: For users to know which group they belong to
 }
 
 export interface GraphRelationship {
@@ -35,39 +32,110 @@ export interface GraphRelationship {
   type: string;
 }
 
-export interface GraphData {
-  nodes: GraphNode[];
-  relationships: GraphRelationship[];
+export interface GroupCluster {
+  id: string;
+  name: string;
+  color: string;
+  members: string[];
 }
 
-// Generate mock graph data
-export function getMockGraphData(): GraphData {
-  const nodes: GraphNode[] = [
-    { id: 'user1', label: 'Ahmed Benali', type: 'user', properties: { balance: 5000 } },
-    { id: 'user2', label: 'Fatima Zahra', type: 'user', properties: { balance: 3200 } },
-    { id: 'user3', label: 'Youssef Idrissi', type: 'user', properties: { balance: 7500 } },
-    { id: 'user4', label: 'Samira Tazi', type: 'user', properties: { balance: 4100 } },
-    { id: 'user5', label: 'Karim Alami', type: 'user', properties: { balance: 6800 } },
-    { id: 'group1', label: 'Weekend Trip Fund', type: 'group', properties: { balance: 12000 } },
-    { id: 'group2', label: 'Office Lunch Pool', type: 'group', properties: { balance: 3500 } },
-    { id: 'group3', label: 'Family Emergency Fund', type: 'group', properties: { balance: 25000 } }
+// Mock graph data with wallet groups as background clusters
+export function getMockGraphData() {
+  // Define wallet groups as clusters
+  const clusters: GroupCluster[] = [
+    {
+      id: 'group1',
+      name: 'Weekend Trip Fund',
+      color: 'rgba(59, 130, 246, 0.1)', // Light blue
+      members: ['user1', 'user2', 'user3']
+    },
+    {
+      id: 'group2',
+      name: 'Office Lunch Pool',
+      color: 'rgba(139, 92, 246, 0.1)', // Light purple
+      members: ['user1', 'user4', 'user5']
+    },
+    {
+      id: 'group3',
+      name: 'Family Emergency Fund',
+      color: 'rgba(239, 68, 68, 0.1)', // Light red
+      members: ['user2', 'user3', 'user4', 'user5']
+    }
   ];
 
+  // User nodes only (no group nodes)
+  const nodes: GraphNode[] = [
+    {
+      id: 'user1',
+      label: 'Ahmed Benali',
+      type: 'user',
+      properties: {
+        balance: 5000,
+        phoneNumber: '212700446631'
+      },
+      groupId: 'group1' // Primary group for positioning
+    },
+    {
+      id: 'user2',
+      label: 'Fatima Zahra',
+      type: 'user',
+      properties: {
+        balance: 3200,
+        phoneNumber: '212700446211'
+      },
+      groupId: 'group1'
+    },
+    {
+      id: 'user3',
+      label: 'Youssef Idrissi',
+      type: 'user',
+      properties: {
+        balance: 7500,
+        phoneNumber: '212755123456'
+      },
+      groupId: 'group1'
+    },
+    {
+      id: 'user4',
+      label: 'Samira Tazi',
+      type: 'user',
+      properties: {
+        balance: 4100,
+        phoneNumber: '212666233333'
+      },
+      groupId: 'group2'
+    },
+    {
+      id: 'user5',
+      label: 'Karim Alami',
+      type: 'user',
+      properties: {
+        balance: 6800,
+        phoneNumber: '212669268097'
+      },
+      groupId: 'group2'
+    }
+  ];
+
+  // Relationships between users (transactions)
   const relationships: GraphRelationship[] = [
-    { source: 'user1', target: 'group1', type: 'MEMBER_OF' },
-    { source: 'user2', target: 'group1', type: 'MEMBER_OF' },
-    { source: 'user3', target: 'group1', type: 'MEMBER_OF' },
-    { source: 'user1', target: 'group2', type: 'MEMBER_OF' },
-    { source: 'user4', target: 'group2', type: 'MEMBER_OF' },
-    { source: 'user5', target: 'group2', type: 'MEMBER_OF' },
-    { source: 'user2', target: 'group3', type: 'MEMBER_OF' },
-    { source: 'user3', target: 'group3', type: 'MEMBER_OF' },
-    { source: 'user4', target: 'group3', type: 'MEMBER_OF' },
-    { source: 'user5', target: 'group3', type: 'MEMBER_OF' },
+    // Weekend Trip Fund transactions
     { source: 'user1', target: 'user2', type: 'TRANSACTED_WITH' },
     { source: 'user2', target: 'user3', type: 'TRANSACTED_WITH' },
-    { source: 'user4', target: 'user5', type: 'TRANSACTED_WITH' }
+    { source: 'user1', target: 'user3', type: 'TRANSACTED_WITH' },
+    
+    // Office Lunch Pool transactions
+    { source: 'user1', target: 'user4', type: 'TRANSACTED_WITH' },
+    { source: 'user4', target: 'user5', type: 'TRANSACTED_WITH' },
+    
+    // Family Emergency Fund transactions
+    { source: 'user2', target: 'user4', type: 'TRANSACTED_WITH' },
+    { source: 'user3', target: 'user5', type: 'TRANSACTED_WITH' },
+    
+    // Cross-group transactions (overlapping members)
+    { source: 'user1', target: 'user5', type: 'TRANSACTED_WITH' },
+    { source: 'user2', target: 'user5', type: 'TRANSACTED_WITH' }
   ];
 
-  return { nodes, relationships };
+  return { nodes, relationships, clusters };
 }

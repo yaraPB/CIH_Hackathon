@@ -1,4 +1,4 @@
-// Mock database for the hackathon
+// Mock database with pending group proposals
 export interface User {
   id: string;
   phoneNumber: string;
@@ -22,6 +22,10 @@ export interface Group {
   balance: number;
   contractId: string;
   createdAt: string;
+  status: 'active' | 'pending'; // NEW: Status field
+  proposedBy?: string; // NEW: Who proposed this group
+  approvedBy?: string[]; // NEW: Who approved
+  rejectedBy?: string[]; // NEW: Who rejected
 }
 
 export interface Transaction {
@@ -33,10 +37,12 @@ export interface Transaction {
   status: 'pending' | 'approved' | 'rejected' | 'completed';
   proposedBy: string;
   approvedBy: string[];
+  rejectedBy: string[];
   requiredApprovals: number;
   description: string;
   createdAt: string;
   beneficiary?: string;
+  rib?: string;
 }
 
 // Mock data
@@ -101,7 +107,10 @@ export const mockGroups: Group[] = [
     members: ['user1', 'user2', 'user3'],
     balance: 12000,
     contractId: 'LAN250383003224941',
-    createdAt: '2025-01-15T10:00:00Z'
+    createdAt: '2025-01-15T10:00:00Z',
+    status: 'active',
+    proposedBy: 'user1',
+    approvedBy: ['user1', 'user2', 'user3']
   },
   {
     id: 'group2',
@@ -110,7 +119,10 @@ export const mockGroups: Group[] = [
     members: ['user1', 'user4', 'user5'],
     balance: 3500,
     contractId: 'LAN251996372325421',
-    createdAt: '2025-02-01T09:00:00Z'
+    createdAt: '2025-02-01T09:00:00Z',
+    status: 'active',
+    proposedBy: 'user1',
+    approvedBy: ['user1', 'user4', 'user5']
   },
   {
     id: 'group3',
@@ -119,7 +131,10 @@ export const mockGroups: Group[] = [
     members: ['user2', 'user3', 'user4', 'user5'],
     balance: 25000,
     contractId: 'LAN251114678086481',
-    createdAt: '2024-12-01T08:00:00Z'
+    createdAt: '2024-12-01T08:00:00Z',
+    status: 'active',
+    proposedBy: 'user2',
+    approvedBy: ['user2', 'user3', 'user4', 'user5']
   }
 ];
 
@@ -132,8 +147,9 @@ export const mockTransactions: Transaction[] = [
     fees: 0,
     status: 'completed',
     proposedBy: 'user1',
-    approvedBy: ['user1', 'user2'],
-    requiredApprovals: 2,
+    approvedBy: ['user1', 'user2', 'user3'],
+    rejectedBy: [],
+    requiredApprovals: 3,
     description: 'Monthly contribution',
     createdAt: '2025-11-01T14:30:00Z'
   },
@@ -146,40 +162,15 @@ export const mockTransactions: Transaction[] = [
     status: 'pending',
     proposedBy: 'user2',
     approvedBy: ['user2'],
-    requiredApprovals: 2,
+    rejectedBy: [],
+    requiredApprovals: 3,
     description: 'Hotel booking payment',
     beneficiary: 'Hotel Atlas',
     createdAt: '2025-11-15T16:45:00Z'
-  },
-  {
-    id: 'txn3',
-    groupId: 'group2',
-    type: 'cashout',
-    amount: 500,
-    fees: 5,
-    status: 'approved',
-    proposedBy: 'user4',
-    approvedBy: ['user4', 'user1'],
-    requiredApprovals: 2,
-    description: 'Restaurant payment',
-    createdAt: '2025-11-20T12:00:00Z'
-  },
-  {
-    id: 'txn4',
-    groupId: 'group3',
-    type: 'cashin',
-    amount: 5000,
-    fees: 0,
-    status: 'completed',
-    proposedBy: 'user3',
-    approvedBy: ['user3', 'user2', 'user4'],
-    requiredApprovals: 3,
-    description: 'Emergency fund contribution',
-    createdAt: '2025-11-10T09:00:00Z'
   }
 ];
 
-// Session management (simplified for hackathon)
+// Session management
 export let currentUser: User | null = null;
 
 export function setCurrentUser(user: User) {
@@ -199,6 +190,14 @@ export function getGroupById(id: string): Group | undefined {
 }
 
 export function getUserGroups(userId: string): Group[] {
+  return mockGroups.filter(g => g.members.includes(userId) && g.status === 'active');
+}
+
+export function getPendingGroups(userId: string): Group[] {
+  return mockGroups.filter(g => g.members.includes(userId) && g.status === 'pending');
+}
+
+export function getAllUserGroups(userId: string): Group[] {
   return mockGroups.filter(g => g.members.includes(userId));
 }
 
@@ -206,23 +205,121 @@ export function getGroupTransactions(groupId: string): Transaction[] {
   return mockTransactions.filter(t => t.groupId === groupId);
 }
 
-export function addTransaction(transaction: Omit<Transaction, 'id' | 'createdAt'>): Transaction {
+export function addTransaction(transaction: Omit<Transaction, 'id' | 'createdAt' | 'approvedBy' | 'rejectedBy'>): Transaction {
+  const group = getGroupById(transaction.groupId);
+  if (!group) throw new Error('Group not found');
+
   const newTxn: Transaction = {
     ...transaction,
     id: `txn${Date.now()}`,
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
+    approvedBy: [transaction.proposedBy],
+    rejectedBy: [],
+    requiredApprovals: group.members.length
   };
+  
   mockTransactions.push(newTxn);
+  
+  // Auto-complete cashin
+  if (transaction.type === 'cashin' && transaction.requiredApprovals === 1) {
+    newTxn.status = 'completed';
+    group.balance += transaction.amount;
+  }
+  
   return newTxn;
 }
 
 export function approveTransaction(txnId: string, userId: string): boolean {
   const txn = mockTransactions.find(t => t.id === txnId);
-  if (!txn || txn.approvedBy.includes(userId)) return false;
+  if (!txn || txn.status !== 'pending') return false;
+  
+  if (txn.approvedBy.includes(userId)) return false;
+  if (txn.rejectedBy.length > 0) return false;
   
   txn.approvedBy.push(userId);
-  if (txn.approvedBy.length >= txn.requiredApprovals) {
-    txn.status = 'approved';
+  
+  const group = getGroupById(txn.groupId);
+  if (group && txn.approvedBy.length === group.members.length) {
+    txn.status = 'completed';
+    group.balance -= txn.amount + txn.fees;
   }
+  
+  return true;
+}
+
+export function rejectTransaction(txnId: string, userId: string): boolean {
+  const txn = mockTransactions.find(t => t.id === txnId);
+  if (!txn || txn.status !== 'pending') return false;
+  
+  if (txn.rejectedBy.includes(userId)) return false;
+  
+  txn.rejectedBy.push(userId);
+  txn.status = 'rejected';
+  
+  return true;
+}
+
+// NEW: Add group proposal (pending until all approve)
+export function proposeGroup(group: Omit<Group, 'id' | 'contractId' | 'createdAt' | 'balance' | 'status' | 'approvedBy' | 'rejectedBy'>): Group {
+  const newGroup: Group = {
+    ...group,
+    id: `group${Date.now()}`,
+    contractId: `LAN${Date.now()}${Math.floor(Math.random() * 1000)}`,
+    balance: 0,
+    createdAt: new Date().toISOString(),
+    status: 'pending',
+    approvedBy: [group.proposedBy!], // Proposer auto-approves
+    rejectedBy: []
+  };
+  
+  mockGroups.push(newGroup);
+  return newGroup;
+}
+
+// NEW: Approve group
+export function approveGroup(groupId: string, userId: string): boolean {
+  const group = mockGroups.find(g => g.id === groupId);
+  if (!group || group.status !== 'pending') return false;
+  
+  if (!group.approvedBy) group.approvedBy = [];
+  if (!group.rejectedBy) group.rejectedBy = [];
+  
+  if (group.approvedBy.includes(userId)) return false;
+  if (group.rejectedBy.length > 0) return false;
+  
+  group.approvedBy.push(userId);
+  
+  // Check if all members approved
+  if (group.approvedBy.length === group.members.length) {
+    group.status = 'active';
+  }
+  
+  return true;
+}
+
+// NEW: Reject group
+export function rejectGroup(groupId: string, userId: string): boolean {
+  const group = mockGroups.find(g => g.id === groupId);
+  if (!group || group.status !== 'pending') return false;
+  
+  if (!group.rejectedBy) group.rejectedBy = [];
+  if (group.rejectedBy.includes(userId)) return false;
+  
+  group.rejectedBy.push(userId);
+  
+  // Remove group from list
+  const index = mockGroups.indexOf(group);
+  if (index > -1) {
+    mockGroups.splice(index, 1);
+  }
+  
+  return true;
+}
+
+export function updateGroupBalance(groupId: string, amount: number): boolean {
+  const group = getGroupById(groupId);
+  if (!group) return false;
+  
+  group.balance += amount;
   return true;
 }

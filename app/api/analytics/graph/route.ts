@@ -1,16 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getMockGraphData } from '@/lib/neo4j';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    // For hackathon, return mock graph data
-    // In production, this would query Neo4j
     const graphData = getMockGraphData();
-
     return NextResponse.json(graphData);
   } catch (error) {
+    console.error('Error fetching graph data:', error);
     return NextResponse.json(
-      { error: 'Failed to get graph data' },
+      { error: 'Failed to fetch graph data' },
       { status: 500 }
     );
   }

@@ -2,14 +2,17 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Wallet, BarChart3, Users, LogOut } from 'lucide-react';
+import { Wallet, BarChart3, LogOut } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 export default function Header() {
   const pathname = usePathname();
+  const { t } = useTranslation();
 
   const navItems = [
-    { href: '/dashboard', label: 'Dashboard', icon: Wallet },
-    { href: '/analytics', label: 'Analytics', icon: BarChart3 },
+    { href: '/dashboard', label: t('nav.dashboard'), icon: Wallet },
+    { href: '/analytics', label: t('nav.analytics'), icon: BarChart3 },
   ];
 
   return (
@@ -18,7 +21,7 @@ export default function Header() {
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center">
             <Link href="/dashboard" className="flex items-center space-x-2">
-              <Wallet className="h-8 w-8 text-indigo-600" />
+              <Wallet className="h-8 w-8 text-blue-600" />
               <span className="text-2xl font-bold text-gray-900">Synergos</span>
             </Link>
             
@@ -32,7 +35,7 @@ export default function Header() {
                     href={item.href}
                     className={`inline-flex items-center px-1 pt-1 text-sm font-medium ${
                       isActive
-                        ? 'text-indigo-600 border-b-2 border-indigo-600'
+                        ? 'text-blue-600 border-b-2 border-blue-600'
                         : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
                     }`}
                   >
@@ -44,13 +47,14 @@ export default function Header() {
             </nav>
           </div>
 
-          <div className="flex items-center">
+          <div className="flex items-center space-x-4">
+            <LanguageSwitcher />
             <Link
               href="/login"
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
             >
               <LogOut className="h-4 w-4 mr-2" />
-              Logout
+              {t('nav.logout')}
             </Link>
           </div>
         </div>
