@@ -1,5 +1,5 @@
 // app/posts/page.jsx
-import PostCard from "../components/Postcard";
+import PostCard from "../../components/Postcard";
 
 export default async function PostsPage() {
   const res = await fetch("https://dummyjson.com/posts", {
