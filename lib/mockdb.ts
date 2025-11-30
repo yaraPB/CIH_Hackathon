@@ -205,7 +205,7 @@ export function getGroupTransactions(groupId: string): Transaction[] {
   return mockTransactions.filter(t => t.groupId === groupId);
 }
 
-export function addTransaction(transaction: Omit<Transaction, 'id' | 'createdAt' | 'approvedBy' | 'rejectedBy'>): Transaction {
+export function addTransaction(transaction: Omit<Transaction, 'id' | 'createdAt' | 'rejectedBy'>): Transaction {
   const group = getGroupById(transaction.groupId);
   if (!group) throw new Error('Group not found');
 
@@ -260,7 +260,7 @@ export function rejectTransaction(txnId: string, userId: string): boolean {
 }
 
 // NEW: Add group proposal (pending until all approve)
-export function proposeGroup(group: Omit<Group, 'id' | 'contractId' | 'createdAt' | 'balance' | 'status' | 'approvedBy' | 'rejectedBy'>): Group {
+export function proposeGroup(group: Omit<Group, 'id' | 'contractId' | 'createdAt' | 'balance' | 'status' | 'rejectedBy'>): Group {
   const newGroup: Group = {
     ...group,
     id: `group${Date.now()}`,
