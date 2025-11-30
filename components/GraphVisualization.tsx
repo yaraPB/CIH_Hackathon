@@ -63,36 +63,31 @@ export default function GraphVisualization({ nodes, relationships, clusters }: P
       .attr('offset', '100%')
       .attr('stop-color', '#8b5cf6');
 
-    // Calculate cluster positions (create overlapping effect)
+    // Calculate cluster positions (create overlapping circular clusters)
     const clusterPositions = new Map([
-      ['group1', { x: width * 0.3, y: height * 0.4 }],
-      ['group2', { x: width * 0.5, y: height * 0.5 }],
-      ['group3', { x: width * 0.6, y: height * 0.6 }]
+      ['group1', { x: width * 0.3, y: height * 0.4, radius: 180 }],
+      ['group2', { x: width * 0.5, y: height * 0.5, radius: 180 }],
+      ['group3', { x: width * 0.6, y: height * 0.6, radius: 180 }]
     ]);
 
-    // Draw cluster backgrounds (wallet groups)
+    // Draw cluster backgrounds (wallet groups as circles)
     const clusterGroup = svg.append('g').attr('class', 'clusters');
     
     clusters.forEach(cluster => {
-      const pos = clusterPositions.get(cluster.id) || { x: width / 2, y: height / 2 };
+      const pos = clusterPositions.get(cluster.id) || { x: width / 2, y: height / 2, radius: 150 };
       
-      // Create rounded rectangle for cluster
-      clusterGroup.append('rect')
-        .attr('x', pos.x - 150)
-        .attr('y', pos.y - 120)
-        .attr('width', 300)
-        .attr('height', 240)
-        .attr('rx', 20)
-        .attr('ry', 20)
+      // Create circle for cluster (no border)
+      clusterGroup.append('circle')
+        .attr('cx', pos.x)
+        .attr('cy', pos.y)
+        .attr('r', pos.radius)
         .attr('fill', cluster.color)
-        .attr('stroke', cluster.color.replace('0.1', '0.4'))
-        .attr('stroke-width', 2)
-        .attr('stroke-dasharray', '5,5');
+        .attr('opacity', 0.3);
       
       // Add cluster label
       clusterGroup.append('text')
         .attr('x', pos.x)
-        .attr('y', pos.y - 100)
+        .attr('y', pos.y - pos.radius - 10)
         .attr('text-anchor', 'middle')
         .attr('font-size', '16px')
         .attr('font-weight', 'bold')
@@ -246,20 +241,20 @@ export default function GraphVisualization({ nodes, relationships, clusters }: P
             <span className="text-sm text-gray-600">Users</span>
           </div>
           <div className="flex items-center">
-            <div className="w-6 h-6 rounded mr-2 bg-blue-100 border border-blue-300 border-dashed"></div>
+            <div className="w-6 h-6 rounded-full mr-2 bg-blue-100 opacity-50"></div>
             <span className="text-sm text-gray-600">Weekend Trip Fund</span>
           </div>
           <div className="flex items-center">
-            <div className="w-6 h-6 rounded mr-2 bg-purple-100 border border-purple-300 border-dashed"></div>
+            <div className="w-6 h-6 rounded-full mr-2 bg-purple-100 opacity-50"></div>
             <span className="text-sm text-gray-600">Office Lunch Pool</span>
           </div>
           <div className="flex items-center">
-            <div className="w-6 h-6 rounded mr-2 bg-red-100 border border-red-300 border-dashed"></div>
+            <div className="w-6 h-6 rounded-full mr-2 bg-red-100 opacity-50"></div>
             <span className="text-sm text-gray-600">Family Emergency Fund</span>
           </div>
         </div>
         <p className="text-xs text-gray-500 mt-2">
-          Users are positioned within their wallet groups (overlapping shows shared memberships)
+          Users are positioned within their wallet groups (overlapping circles show shared memberships)
         </p>
       </div>
       <div className="p-4 flex justify-center bg-gray-50">

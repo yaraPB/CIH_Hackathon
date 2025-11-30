@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Wallet, BarChart3, LogOut } from 'lucide-react';
+import { Wallet, BarChart3, LogOut, Clock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 
@@ -12,6 +12,7 @@ export default function Header() {
 
   const navItems = [
     { href: '/dashboard', label: t('nav.dashboard'), icon: Wallet },
+    { href: '/pending-groups', label: 'Pending', icon: Clock }, 
     { href: '/analytics', label: t('nav.analytics'), icon: BarChart3 },
   ];
 
