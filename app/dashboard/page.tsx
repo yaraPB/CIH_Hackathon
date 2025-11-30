@@ -245,7 +245,7 @@ export default function DashboardPage() {
                         </div>
                         <div className="flex items-center font-semibold text-gray-900">
                           <Wallet className="h-4 w-4 mr-1 text-green-600" />
-                          <span>{group.balance.toLocaleString()} MAD</span>
+                          <span>{group.balance.toLocaleString()}</span>
                         </div>
                       </div>
                     </div>

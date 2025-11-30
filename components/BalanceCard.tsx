@@ -8,6 +8,7 @@ interface BalanceCardProps {
   amount: number;
   change?: number;
   changeLabel?: string;
+  
 }
 
 export default function BalanceCard({
