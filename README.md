@@ -1,5 +1,7 @@
 # 🌟 Synergos - Group Wallet Platform
 
+[Link to the website](https://cih-hackathon.vercel.app/)
+
 A collaborative payment management platform for communities, built with Next.js 14 and modern web technologies.
 
 Created by:
